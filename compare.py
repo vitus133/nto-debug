@@ -8,7 +8,7 @@ def parse_mc(data, object, name):
 		key = file.get("path")
 		object[key] = {}
 		object[key]["contents"] = file.get("contents").get("source")
-		object[key]["flie-name"] = name
+		object[key]["object-name"] = name
 	
 
 
@@ -34,7 +34,7 @@ def compare_mc(set1, set2):
 			continue
 
 		if v1.get('contents') != v2.get('contents'):
-			print(f"different: key {key}, file {v1.get('file-name')}")
+			print(f"different: key {key}, MachineConfig {v1.get('object-name')}")
 			print(f"set1 {v1.get('contents')}")
 			print(f"set2 {v2.get('contents')}")
 
