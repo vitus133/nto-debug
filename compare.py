@@ -32,7 +32,6 @@ def compare_mc(set1, set2):
 			print(v1)
 			print(v2)
 			continue
-
 		if v1.get('contents') != v2.get('contents'):
 			print(f"different: key {key}, MachineConfig {v1.get('object-name')}")
 			print(f"set1 {v1.get('contents')}")
