@@ -11,15 +11,44 @@ def parse_mc(data, object, name):
         object[key]["object-name"] = name
 
 
+def parse_td(data, object, name):
+    profiles = data.get('spec').get('profile')
+    for profile in profiles:
+        key = profile.get('name')
+        object[key] = profile.get('data')
+
+
 def parse_items(sets):
     for dset in sets:
         files, set = dset[0], dset[1]
         for item in files:
             with open(item, 'r') as file:
                 data = yaml.safe_load(file)
+                name = data.get("metadata").get("name")
                 if data.get("kind") == "MachineConfig":
-                    name = data.get("metadata").get("name")
                     parse_mc(data, set['mc'], name)
+                if data.get("kind") == "Tuned":
+                    parse_td(data, set['td'], name)
+
+
+def compare_kc(set1, set2):
+    pass
+
+
+def compare_td(set1, set2):
+    identical = True
+    for key in set1:
+        v1 = set1.get(key).split('\n')
+        v2 = set2.get(key, '').split('\n')
+        if v2 == '':
+            print(f"{key} is found in set1 and not found in set 2")
+            continue
+        for idx in range(len(v1)):
+            if v1[idx] != v2[idx]:
+                print(f">>{v1[idx]}")
+                print(f"<<{v1[idx]}")
+                identical = False
+    print(f"Tuned profiles are {'identical' if identical else 'different'}")
 
 
 def compare_mc(set1, set2):
@@ -38,13 +67,30 @@ def compare_mc(set1, set2):
             print(f"set2 {v2.get('contents')}")
 
 
+def compare_items(set1, set2):
+    for item, func in zip(
+            ('mc', 'kc', 'td'), (compare_mc, compare_kc, compare_td)):
+        func(set1.get(item), set2.get(item))
+
+
+def init():
+    d1 = {
+        "mc": {},
+        "kc": {},
+        "td": {}
+    }
+    d2 = {
+        "mc": {},
+        "kc": {},
+        "td": {}
+    }
+    return d1, d2
+
+
 if __name__ == "__main__":
-    d1 = {}
-    d1["mc"] = {}
-    d2 = {}
-    d2["mc"] = {}
+    d1, d2 = init()
     day1_files = [os.path.join("day1", f) for f in os.listdir("day1")]
     day2_files = [os.path.join("day2", f) for f in os.listdir("day2")]
 
     parse_items([[day1_files, d1,], [day2_files, d2]])
-    compare_mc(d1.get('mc'), d2.get('mc'))
+    compare_items(d1, d2)
