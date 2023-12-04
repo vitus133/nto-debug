@@ -11,12 +11,19 @@ def parse_mc(data, object, name):
         object[key]["object-name"] = name
 
 
-def parse_td(data, object, name):
+def parse_td(data, object):
     profiles = data.get('spec').get('profile')
     for profile in profiles:
         key = profile.get('name')
         object[key] = profile.get('data')
 
+
+def parse_kc(data, object):
+    kc = data.get('spec').get('kubeletConfig')
+    if object.get('kc') != None:
+        print(f"Multiple kubelet configurations found: {object.get('kc')}")
+        return
+    object['kc'] = kc
 
 def parse_items(sets):
     for dset in sets:
@@ -28,11 +35,13 @@ def parse_items(sets):
                 if data.get("kind") == "MachineConfig":
                     parse_mc(data, set['mc'], name)
                 if data.get("kind") == "Tuned":
-                    parse_td(data, set['td'], name)
+                    parse_td(data, set['td'])
+                if data.get("kind") == "KubeletConfig":
+                    parse_kc(data, set['kc'])
 
 
 def compare_kc(set1, set2):
-    pass
+    print(f"kubeletconfigs are {'identical' if set1 == set2 else 'different'}")
 
 
 def compare_td(set1, set2):
@@ -76,13 +85,13 @@ def compare_items(set1, set2):
 def init():
     d1 = {
         "mc": {},
-        "kc": {},
-        "td": {}
+        "td": {},
+        "kc": {}
     }
     d2 = {
         "mc": {},
-        "kc": {},
-        "td": {}
+        "td": {},
+        "kc": {}
     }
     return d1, d2
 
