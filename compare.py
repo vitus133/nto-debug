@@ -3,12 +3,11 @@ import os
 import yaml
 
 
-def parse_mc(data, object, name):
+def parse_mc(data, object):
     for file in data.get("spec").get("config").get("storage").get("files"):
         key = file.get("path")
         object[key] = {}
         object[key]["contents"] = file.get("contents").get("source")
-        object[key]["object-name"] = name
 
 
 def parse_td(data, object):
@@ -20,10 +19,21 @@ def parse_td(data, object):
 
 def parse_kc(data, object):
     kc = data.get('spec').get('kubeletConfig')
-    if object.get('kc') != None:
-        print(f"Multiple kubelet configurations found: {object.get('kc')}")
+    if object.get("KubeletConfig") is not None:
+        print(f'Multiple kubelet configurations found:',
+              f'{object.get("KubeletConfig")}')
         return
-    object['kc'] = kc
+    object["KubeletConfig"] = kc
+
+
+# parsers.keys() can be used for iteration as dict maintains insertion order
+# since python 3.7
+parsers = {
+    "MachineConfig": parse_mc,
+    "Tuned": parse_td,
+    "KubeletConfig": parse_kc
+}
+
 
 def parse_items(sets):
     for dset in sets:
@@ -31,13 +41,10 @@ def parse_items(sets):
         for item in files:
             with open(item, 'r') as file:
                 data = yaml.safe_load(file)
-                name = data.get("metadata").get("name")
-                if data.get("kind") == "MachineConfig":
-                    parse_mc(data, set['mc'], name)
-                if data.get("kind") == "Tuned":
-                    parse_td(data, set['td'])
-                if data.get("kind") == "KubeletConfig":
-                    parse_kc(data, set['kc'])
+                kind = data.get("kind")
+                if kind not in parsers.keys():
+                    continue
+                parsers[kind](data, set[kind])
 
 
 def compare_kc(set1, set2):
@@ -78,20 +85,20 @@ def compare_mc(set1, set2):
 
 def compare_items(set1, set2):
     for item, func in zip(
-            ('mc', 'kc', 'td'), (compare_mc, compare_kc, compare_td)):
+            parsers.keys(), (compare_mc, compare_td, compare_kc)):
         func(set1.get(item), set2.get(item))
 
 
 def init():
     d1 = {
-        "mc": {},
-        "td": {},
-        "kc": {}
+        "MachineConfig": {},
+        "Tuned": {},
+        "KubeletConfig": {}
     }
     d2 = {
-        "mc": {},
-        "td": {},
-        "kc": {}
+        "MachineConfig": {},
+        "Tuned": {},
+        "KubeletConfig": {}
     }
     return d1, d2
 
